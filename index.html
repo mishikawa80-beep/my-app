@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="icon.png">
+    <title>Daily Planner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+    </style>
+</head>
+<body class="p-4 max-w-md mx-auto">
+    <h1 class="text-2xl font-bold mb-6 text-slate-800">Daily Tasks</h1>
+
+    <!-- 通常のToDoリスト -->
+    <div class="mb-8">
+        <div class="flex mb-4">
+            <input type="text" id="todoInput" class="border p-2 flex-grow rounded-l" placeholder="新しいタスク...">
+            <button onclick="addTodo()" class="bg-green-500 text-white px-4 py-2 rounded-r">追加</button>
+        </div>
+        <ul id="todoList" class="space-y-2"></ul>
+    </div>
+
+    <script>
+        // データ構造
+        let state = {
+            lastDate: new Date().toLocaleDateString(),
+            todos: []
+        };
+
+        // 保存と読み込み
+        function save() { localStorage.setItem('plannerState', JSON.stringify(state)); }
+        function load() {
+            const saved = localStorage.getItem('plannerState');
+            if (saved) {
+                const loadedState = JSON.parse(saved);
+                // 以前のデータからtodosとlastDateを引き継ぐ
+                state.lastDate = loadedState.lastDate || new Date().toLocaleDateString();
+                state.todos = loadedState.todos || [];
+                checkDayPivot();
+            }
+            render();
+        }
+
+        // 日付が変わった時の処理
+        function checkDayPivot() {
+            const today = new Date().toLocaleDateString();
+            if (state.lastDate !== today) {
+                // 完了済みToDoの削除
+                state.todos = state.todos.filter(todo => !todo.done);
+                state.lastDate = today;
+                save();
+            }
+        }
+
+        // ToDo操作
+        function addTodo() {
+            const input = document.getElementById('todoInput');
+            if (!input.value) return;
+            state.todos.push({ text: input.value, done: false });
+            input.value = '';
+            save();
+            render();
+        }
+
+        function toggleTodo(index) {
+            state.todos[index].done = !state.todos[index].done;
+            save();
+            render();
+        }
+
+        // 画面描画
+        function render() {
+            const todoList = document.getElementById('todoList');
+            todoList.innerHTML = '';
+            state.todos.forEach((todo, i) => {
+                todoList.innerHTML += `
+                    <li onclick="toggleTodo(${i})" class="flex items-center bg-white p-3 rounded shadow-sm cursor-pointer border-l-4 ${todo.done ? 'border-gray-300 opacity-50' : 'border-green-400'}">
+                        <input type="checkbox" ${todo.done ? 'checked' : ''} class="mr-3">
+                        <span class="${todo.done ? 'line-through text-gray-400' : 'text-slate-700'}">${todo.text}</span>
+                    </li>`;
+            });
+        }
+
+        load();
+    </script>
+</body>
+</html>
